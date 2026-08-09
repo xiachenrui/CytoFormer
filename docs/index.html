@@ -30,7 +30,6 @@
                    border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit}
   ul.slides button small{display:block;color:var(--muted);font-size:12px}
   ul.slides button[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
-  ul.slides button[aria-pressed="true"] small{color:var(--muted)}
 
   .seg{display:flex;gap:6px}
   .seg button{flex:1;cursor:pointer;font:inherit;color:var(--fg);background:var(--bg);
@@ -63,13 +62,21 @@
     </section>
 
     <section>
+      <h2>Prediction</h2>
+      <div class="seg">
+        <button id="btn-full" aria-pressed="true">Whole slide</button>
+        <button id="btn-ref-cells" aria-pressed="false">Reference cells</button>
+      </div>
+      <p class="hint" id="scopeHint"></p>
+    </section>
+
+    <section>
       <h2>View</h2>
       <div class="seg">
         <button id="btn-ov" aria-pressed="true">Overlay</button>
         <button id="btn-he" aria-pressed="false">H&amp;E only</button>
       </div>
-      <p class="hint" id="ovHint">Nuclei segmented with StarDist over the whole section, then typed by
-      CytoFormer.</p>
+      <p class="hint" id="ovHint">The overlay is drawn on the slide.</p>
     </section>
 
     <section>
@@ -82,9 +89,8 @@
       <div class="seg">
         <button id="btn-ref" aria-pressed="false">Show reference</button>
       </div>
-      <p class="hint" id="refHint">Adds a second panel on the right with the cell types derived from
-      the paired spatial transcriptome. It covers only the cells Xenium captured and kept, so it is
-      sparser than the prediction. The two panels pan and zoom together.</p>
+      <p class="hint">Adds a second panel on the right with the cell types derived from the paired
+      spatial transcriptome. The two panels pan and zoom together.</p>
     </section>
 
     <section>
@@ -94,8 +100,8 @@
   </div>
 
   <div class="stage">
-    <div class="pane" id="panePred"><div class="tag" id="tagPred">CytoFormer prediction</div><div class="osd" id="osdPred"></div></div>
-    <div class="pane" id="paneRef"><div class="tag" id="tagRef">Reference (spatial transcriptomics)</div><div class="osd" id="osdRef"></div></div>
+    <div class="pane" id="panePred"><div class="tag" id="tagPred"></div><div class="osd" id="osdPred"></div></div>
+    <div class="pane" id="paneRef"><div class="tag" id="tagRef"></div><div class="osd" id="osdRef"></div></div>
   </div>
 </div>
 
@@ -112,7 +118,14 @@ const COLORS = {
 };
 const OSD_IMG = "https://cdn.jsdelivr.net/npm/openseadragon@4.1.0/build/openseadragon/images/";
 
-let SAMPLES = [], current = null, showRef = false, showOverlay = true, syncing = false;
+const SCOPE = {
+  full: {suffix: "predfull", count: s => `${s.nuclei} nuclei`,
+         hint: "Every nucleus on the section, found with StarDist and typed by CytoFormer."},
+  cells:{suffix: "pred",     count: s => `${s.ref_cells} cells`,
+         hint: "Only the cells Xenium segmented and kept, so it lines up one to one with the reference."}
+};
+
+let SAMPLES = [], current = null, scope = "full", showRef = false, showOverlay = true, syncing = false;
 const V = {pred:{viewer:null, layer:null}, ref:{viewer:null, layer:null}};
 
 function opacity(){ return showOverlay ? document.getElementById("op").value / 100 : 0; }
@@ -122,6 +135,14 @@ function legendFor(classes){
     const rgb = COLORS[c] || [150,150,150];
     return `<li><i style="background:rgb(${rgb.join(",")})"></i>${c.replace(/_/g," ")}</li>`;
   }).join("");
+}
+
+function labels(){
+  const s = current, sc = SCOPE[scope];
+  document.getElementById("tagPred").textContent = `CytoFormer prediction — ${sc.count(s)}`;
+  document.getElementById("tagRef").textContent =
+    `Reference (spatial transcriptomics) — ${s.ref_cells} cells`;
+  document.getElementById("scopeHint").textContent = sc.hint;
 }
 
 function makeViewer(which, kind){
@@ -158,20 +179,32 @@ function bindSync(){
 function open(sample){
   current = sample;
   legendFor(sample.classes);
-  document.getElementById("tagPred").textContent = `CytoFormer prediction — ${sample.nuclei} nuclei`;
-  document.getElementById("tagRef").textContent =
-    `Reference (spatial transcriptomics) — ${sample.ref_cells} cells`;
+  labels();
   document.querySelectorAll("#slides button").forEach(b =>
     b.setAttribute("aria-pressed", b.dataset.id === sample.id));
   ["pred","ref"].forEach(k => { if (V[k].viewer){ V[k].viewer.destroy(); V[k] = {viewer:null, layer:null}; } });
-  makeViewer("pred", "pred");
+  makeViewer("pred", SCOPE[scope].suffix);
   if (showRef) makeViewer("ref", "gt");
+}
+
+function setScope(next){
+  if (next === scope) return;
+  scope = next;
+  document.getElementById("btn-full").setAttribute("aria-pressed", scope === "full");
+  document.getElementById("btn-ref-cells").setAttribute("aria-pressed", scope === "cells");
+  labels();
+  const v = V.pred.viewer;
+  if (!v) return;
+  if (V.pred.layer) { v.world.removeItem(V.pred.layer); V.pred.layer = null; }
+  v.addTiledImage({ tileSource: `slides/${current.id}_${SCOPE[scope].suffix}.dzi`,
+                    opacity: opacity(), success: e => { V.pred.layer = e.item; } });
 }
 
 function toggleRef(){
   showRef = !showRef;
-  document.getElementById("btn-ref").setAttribute("aria-pressed", showRef);
-  document.getElementById("btn-ref").textContent = showRef ? "Hide reference" : "Show reference";
+  const b = document.getElementById("btn-ref");
+  b.setAttribute("aria-pressed", showRef);
+  b.textContent = showRef ? "Hide reference" : "Show reference";
   document.getElementById("paneRef").style.display = showRef ? "block" : "none";
   if (showRef) makeViewer("ref", "gt");
   else if (V.ref.viewer){ V.ref.viewer.destroy(); V.ref = {viewer:null, layer:null}; }
@@ -182,8 +215,7 @@ function setOverlay(on){
   document.getElementById("btn-ov").setAttribute("aria-pressed", on);
   document.getElementById("btn-he").setAttribute("aria-pressed", !on);
   document.getElementById("ovHint").textContent = on
-    ? "Nuclei segmented with StarDist over the whole section, then typed by CytoFormer."
-    : "The slide as scanned, with no overlay.";
+    ? "The overlay is drawn on the slide." : "The slide as scanned, with no overlay.";
   ["pred","ref"].forEach(k => { if (V[k].layer) V[k].layer.setOpacity(opacity()); });
 }
 
@@ -192,6 +224,8 @@ document.getElementById("op").addEventListener("input", e => {
   if (!showOverlay) setOverlay(true);
   ["pred","ref"].forEach(k => { if (V[k].layer) V[k].layer.setOpacity(opacity()); });
 });
+document.getElementById("btn-full").addEventListener("click", () => setScope("full"));
+document.getElementById("btn-ref-cells").addEventListener("click", () => setScope("cells"));
 document.getElementById("btn-ov").addEventListener("click", () => setOverlay(true));
 document.getElementById("btn-he").addEventListener("click", () => setOverlay(false));
 document.getElementById("btn-ref").addEventListener("click", toggleRef);

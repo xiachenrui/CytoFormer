@@ -3,7 +3,7 @@
     "id": "NCBI785",
     "name": "Breast",
     "organ": "breast",
-    "nuclei": "187,687",
+    "nuclei": "186,476",
     "ref_cells": "124,682",
     "classes": ["tumor", "Epithelium", "Stroma", "Endothelium", "Lymphocyte", "Plasma_cell", "Macrophage"]
   },
@@ -11,7 +11,7 @@
     "id": "NCBI865",
     "name": "Lung",
     "organ": "lung",
-    "nuclei": "124,778",
+    "nuclei": "124,743",
     "ref_cells": "75,100",
     "classes": ["Epithelium", "Stroma", "Endothelium", "Lymphocyte", "Plasma_cell", "Macrophage"]
   }

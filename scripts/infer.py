@@ -1,6 +1,6 @@
 """CytoFormer inference: predict a cell type for each cell patch.
 
-Loads a model directory (best.pth + organ_celltype_map.json) and predicts a cell type for each
+Loads a model directory (checkpoint.pth + organ_celltype_map.json) and predicts a cell type for each
 input cell patch image. The organ is known at input and routes the per-organ head; predictions
 are restricted to that organ's cell types. Each patch should be ~the cell's 56 um field of view
 (any pixel size — it is resized to 224 px).
@@ -20,6 +20,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) 
 Image.MAX_IMAGE_PIXELS = None
 
 IN_PX = 224
+CKPT = "checkpoint.pth"
 _EXT = (".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".webp")
 
 
@@ -30,9 +31,7 @@ def load_model(model_dir, device):
     from cytoformer import common
     from cytoformer.model import CellClassifier
     net = CellClassifier()                                        # foundation weights optional (ckpt has all)
-    ck = torch.load(os.path.join(model_dir, "best.pth"), map_location="cpu")
-    sd = ck.get("model_state_dict", ck)
-    sd = {k.replace("_orig_mod.", ""): v for k, v in sd.items()}   # tolerate a torch.compile prefix
+    sd = torch.load(os.path.join(model_dir, CKPT), map_location="cpu")
     net.load_state_dict(sd, strict=True)
     net.eval().to(device)
     return net, common
@@ -61,7 +60,7 @@ def predict(net, common, files, organ, device, batch=256):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--model_dir", required=True, help="dir with best.pth + organ_celltype_map.json")
+    ap.add_argument("--model_dir", required=True, help=f"dir with {CKPT} + organ_celltype_map.json")
     ap.add_argument("--organ", required=True, help="one of the 16 organs (see organ_celltype_map.json)")
     ap.add_argument("--patches", required=True, nargs="+", help="a folder of cell-patch images, or image files")
     ap.add_argument("--out", default="preds.parquet")

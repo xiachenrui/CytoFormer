@@ -89,9 +89,12 @@ Download the checkpoint and put it next to `organ_celltype_map.json`:
 
 ```bash
 mkdir -p checkpoints && cp cytoformer/organ_celltype_map.json checkpoints/
-# best.pth (2.6 GB) from https://huggingface.co/zhihuanglab/CytoFormer
-huggingface-cli download zhihuanglab/CytoFormer best.pth --local-dir checkpoints
+hf download zhihuanglab/CytoFormer checkpoint.pth --local-dir checkpoints
 ```
+
+`checkpoint.pth` (2.7 GB) is the research release: a plain `state_dict` in fp32, with the
+`torch.compile` prefixes stripped and the training state removed, so it loads with
+`strict=True` and nothing needs unwrapping.
 
 The checkpoint contains the whole network, so the UNI2-h foundation weights are **not** needed for
 inference.
@@ -143,9 +146,8 @@ import torch
 from cytoformer import CellClassifier, ORGAN_IDX
 
 net = CellClassifier()
-sd = torch.load("checkpoints/best.pth", map_location="cpu")["model_state_dict"]
-sd = {k.replace("_orig_mod.", ""): v for k, v in sd.items()}   # tolerate a torch.compile prefix
-net.load_state_dict(sd); net.eval()
+net.load_state_dict(torch.load("checkpoints/checkpoint.pth", map_location="cpu"))
+net.eval()
 
 x = torch.randn(2, 3, 224, 224)                                # ImageNet-normalised patches
 organ = torch.tensor([ORGAN_IDX["skin"]] * 2)

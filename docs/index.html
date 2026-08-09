@@ -6,9 +6,7 @@
 <title>CytoFormer — sample predictions</title>
 <script src="https://cdn.jsdelivr.net/npm/openseadragon@4.1.0/build/openseadragon/openseadragon.min.js"></script>
 <style>
-  :root{
-    --bg:#ffffff; --fg:#16181d; --muted:#5b6270; --line:#e3e6ec; --panel:#f7f8fa; --accent:#4754f4;
-  }
+  :root{ --bg:#fff; --fg:#16181d; --muted:#5b6270; --line:#e3e6ec; --panel:#f7f8fa; --accent:#4754f4; }
   @media (prefers-color-scheme: dark){
     :root{ --bg:#14161a; --fg:#e8eaee; --muted:#9aa2b1; --line:#2a2e37; --panel:#1c1f26; }
   }
@@ -16,26 +14,42 @@
   body{margin:0;background:var(--bg);color:var(--fg);
        font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
   header{padding:14px 18px;border-bottom:1px solid var(--line)}
-  h1{margin:0;font-size:16px;font-weight:600;letter-spacing:.01em}
+  h1{margin:0;font-size:16px;font-weight:600}
   h1 span{color:var(--muted);font-weight:400}
   .wrap{display:flex;height:calc(100vh - 56px)}
-  .side{width:260px;flex:none;border-right:1px solid var(--line);background:var(--panel);
+
+  .side{width:250px;flex:none;border-right:1px solid var(--line);background:var(--panel);
         padding:16px;overflow-y:auto}
   .side h2{margin:0 0 8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
   .side section{margin-bottom:22px}
-  select,button{font:inherit;color:var(--fg);background:var(--bg);
-                border:1px solid var(--line);border-radius:6px;padding:6px 8px}
-  select{width:100%}
+  p.hint{color:var(--muted);margin:8px 0 0;font-size:12px}
+
+  ul.slides{list-style:none;margin:0;padding:0}
+  ul.slides li{margin-bottom:6px}
+  ul.slides button{width:100%;text-align:left;cursor:pointer;padding:8px 10px;border-radius:7px;
+                   border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit}
+  ul.slides button small{display:block;color:var(--muted);font-size:12px}
+  ul.slides button[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+  ul.slides button[aria-pressed="true"] small{color:var(--muted)}
+
   .seg{display:flex;gap:6px}
-  .seg button{flex:1;cursor:pointer}
+  .seg button{flex:1;cursor:pointer;font:inherit;color:var(--fg);background:var(--bg);
+              border:1px solid var(--line);border-radius:6px;padding:6px 8px}
   .seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
   input[type=range]{width:100%;accent-color:var(--accent)}
   .val{float:right;color:var(--muted);font-variant-numeric:tabular-nums}
-  #osd{flex:1;min-width:0;background:#000}
-  ul.legend{list-style:none;margin:0;padding:0;columns:1}
+
+  .stage{flex:1;min-width:0;display:flex}
+  .pane{flex:1;min-width:0;position:relative;border-left:1px solid var(--line)}
+  .pane:first-child{border-left:none}
+  .pane .osd{position:absolute;inset:0;background:#000}
+  .pane .tag{position:absolute;top:10px;left:10px;z-index:5;background:rgba(0,0,0,.62);color:#fff;
+             padding:3px 9px;border-radius:5px;font-size:12px;letter-spacing:.01em}
+  #paneRef{display:none}
+
+  ul.legend{list-style:none;margin:0;padding:0}
   ul.legend li{display:flex;align-items:center;gap:8px;padding:2px 0;color:var(--muted)}
   ul.legend i{width:11px;height:11px;border-radius:2px;flex:none}
-  p.hint{color:var(--muted);margin:8px 0 0;font-size:12px}
 </style>
 </head>
 <body>
@@ -44,24 +58,31 @@
 <div class="wrap">
   <div class="side">
     <section>
-      <h2>Sample</h2>
-      <select id="sample"></select>
-      <p class="hint" id="meta"></p>
+      <h2>Held-out slides</h2>
+      <ul class="slides" id="slides"></ul>
     </section>
 
     <section>
-      <h2>Overlay</h2>
+      <h2>View</h2>
       <div class="seg">
-        <button id="btn-pred" aria-pressed="true">Prediction</button>
-        <button id="btn-gt" aria-pressed="false">Reference</button>
+        <button id="btn-ov" aria-pressed="true">Overlay</button>
+        <button id="btn-he" aria-pressed="false">H&amp;E only</button>
       </div>
-      <p class="hint">Reference = cell types derived from the paired spatial transcriptome.</p>
+      <p class="hint" id="ovHint">Predicted cell types drawn on the slide.</p>
     </section>
 
     <section>
       <h2>Opacity <span class="val" id="opv">100%</span></h2>
       <input type="range" id="op" min="0" max="100" value="100">
-      <p class="hint">Drag to 0 to see the raw H&amp;E underneath.</p>
+    </section>
+
+    <section>
+      <h2>Reference</h2>
+      <div class="seg">
+        <button id="btn-ref" aria-pressed="false">Show side by side</button>
+      </div>
+      <p class="hint">Adds a second panel on the right with the cell types derived from the paired
+      spatial transcriptome. The two panels pan and zoom together.</p>
     </section>
 
     <section>
@@ -69,7 +90,11 @@
       <ul class="legend" id="legend"></ul>
     </section>
   </div>
-  <div id="osd"></div>
+
+  <div class="stage">
+    <div class="pane" id="panePred"><div class="tag" id="tagPred">Prediction</div><div class="osd" id="osdPred"></div></div>
+    <div class="pane" id="paneRef"><div class="tag">Reference (spatial transcriptomics)</div><div class="osd" id="osdRef"></div></div>
+  </div>
 </div>
 
 <script>
@@ -83,61 +108,94 @@ const COLORS = {
   "Cardiomyocyte":[170,40,60], "Erythroid":[230,60,90], "Myeloid_progenitor":[90,140,60],
   "Bone_cell":[150,150,200], "Nerve":[230,160,210]
 };
+const OSD_IMG = "https://cdn.jsdelivr.net/npm/openseadragon@4.1.0/build/openseadragon/images/";
 
-let SAMPLES = [], viewer = null, overlayLayer = null, current = null, kind = "pred";
+let SAMPLES = [], current = null, showRef = false, showOverlay = true, syncing = false;
+const V = {pred:{viewer:null, layer:null}, ref:{viewer:null, layer:null}};
+
+function opacity(){ return showOverlay ? document.getElementById("op").value / 100 : 0; }
 
 function legendFor(classes){
-  const ul = document.getElementById("legend");
-  ul.innerHTML = "";
-  classes.forEach(c => {
+  document.getElementById("legend").innerHTML = classes.map(c => {
     const rgb = COLORS[c] || [150,150,150];
-    const li = document.createElement("li");
-    li.innerHTML = `<i style="background:rgb(${rgb.join(",")})"></i>${c.replace(/_/g," ")}`;
-    ul.appendChild(li);
+    return `<li><i style="background:rgb(${rgb.join(",")})"></i>${c.replace(/_/g," ")}</li>`;
+  }).join("");
+}
+
+function makeViewer(which, kind){
+  const v = OpenSeadragon({
+    id: which === "pred" ? "osdPred" : "osdRef", prefixUrl: OSD_IMG,
+    tileSources: `slides/${current.id}_he.dzi`,
+    showNavigator: which === "pred", navigatorPosition: "BOTTOM_RIGHT",
+    maxZoomPixelRatio: 3, visibilityRatio: 1, constrainDuringPan: true
+  });
+  v.addOnceHandler("open", () => {
+    v.addTiledImage({ tileSource: `slides/${current.id}_${kind}.dzi`, opacity: opacity(),
+                      success: e => { V[which].layer = e.item; } });
+    if (which === "ref") { syncFrom("pred"); bindSync(); }
+  });
+  V[which].viewer = v;
+  return v;
+}
+
+function syncFrom(src){
+  const a = V[src].viewer, b = V[src === "pred" ? "ref" : "pred"].viewer;
+  if (!a || !b) return;
+  syncing = true;
+  b.viewport.zoomTo(a.viewport.getZoom(), null, true);
+  b.viewport.panTo(a.viewport.getCenter(), true);
+  syncing = false;
+}
+function bindSync(){
+  ["pred","ref"].forEach(src => {
+    const v = V[src].viewer;
+    ["zoom","pan"].forEach(ev => v.addHandler(ev, () => { if (!syncing) syncFrom(src); }));
   });
 }
 
 function open(sample){
   current = sample;
-  document.getElementById("meta").textContent = `${sample.organ} · ${sample.cells} cells`;
   legendFor(sample.classes);
-  if (viewer) viewer.destroy();
-  viewer = OpenSeadragon({
-    id: "osd", prefixUrl: "https://cdn.jsdelivr.net/npm/openseadragon@4.1.0/build/openseadragon/images/",
-    tileSources: `slides/${sample.id}_he.dzi`, showNavigator: true, navigatorPosition: "BOTTOM_RIGHT",
-    maxZoomPixelRatio: 3, visibilityRatio: 1, constrainDuringPan: true
-  });
-  viewer.addOnceHandler("open", addOverlay);
+  document.querySelectorAll("#slides button").forEach(b =>
+    b.setAttribute("aria-pressed", b.dataset.id === sample.id));
+  ["pred","ref"].forEach(k => { if (V[k].viewer){ V[k].viewer.destroy(); V[k] = {viewer:null, layer:null}; } });
+  makeViewer("pred", "pred");
+  if (showRef) makeViewer("ref", "gt");
 }
 
-function addOverlay(){
-  const opacity = document.getElementById("op").value / 100;
-  viewer.addTiledImage({
-    tileSource: `slides/${current.id}_${kind}.dzi`, opacity,
-    success: e => { overlayLayer = e.item; }
-  });
+function toggleRef(){
+  showRef = !showRef;
+  document.getElementById("btn-ref").setAttribute("aria-pressed", showRef);
+  document.getElementById("btn-ref").textContent = showRef ? "Hide reference" : "Show side by side";
+  document.getElementById("paneRef").style.display = showRef ? "block" : "none";
+  if (showRef) makeViewer("ref", "gt");
+  else if (V.ref.viewer){ V.ref.viewer.destroy(); V.ref = {viewer:null, layer:null}; }
 }
 
-function swapOverlay(k){
-  kind = k;
-  document.getElementById("btn-pred").setAttribute("aria-pressed", k === "pred");
-  document.getElementById("btn-gt").setAttribute("aria-pressed", k === "gt");
-  if (overlayLayer){ viewer.world.removeItem(overlayLayer); overlayLayer = null; }
-  addOverlay();
+function setOverlay(on){
+  showOverlay = on;
+  document.getElementById("btn-ov").setAttribute("aria-pressed", on);
+  document.getElementById("btn-he").setAttribute("aria-pressed", !on);
+  document.getElementById("ovHint").textContent = on
+    ? "Predicted cell types drawn on the slide." : "The slide as scanned, with no overlay.";
+  ["pred","ref"].forEach(k => { if (V[k].layer) V[k].layer.setOpacity(opacity()); });
 }
 
 document.getElementById("op").addEventListener("input", e => {
   document.getElementById("opv").textContent = e.target.value + "%";
-  if (overlayLayer) overlayLayer.setOpacity(e.target.value / 100);
+  if (!showOverlay) setOverlay(true);
+  ["pred","ref"].forEach(k => { if (V[k].layer) V[k].layer.setOpacity(opacity()); });
 });
-document.getElementById("btn-pred").addEventListener("click", () => swapOverlay("pred"));
-document.getElementById("btn-gt").addEventListener("click", () => swapOverlay("gt"));
-document.getElementById("sample").addEventListener("change", e => open(SAMPLES[e.target.value]));
+document.getElementById("btn-ov").addEventListener("click", () => setOverlay(true));
+document.getElementById("btn-he").addEventListener("click", () => setOverlay(false));
+document.getElementById("btn-ref").addEventListener("click", toggleRef);
 
 fetch("slides/samples.json").then(r => r.json()).then(list => {
   SAMPLES = list;
-  const sel = document.getElementById("sample");
-  list.forEach((s, i) => sel.add(new Option(s.name, i)));
+  document.getElementById("slides").innerHTML = list.map(s =>
+    `<li><button data-id="${s.id}">${s.name}<small>${s.cells} cells</small></button></li>`).join("");
+  document.querySelectorAll("#slides button").forEach(b =>
+    b.addEventListener("click", () => open(SAMPLES.find(s => s.id === b.dataset.id))));
   open(list[0]);
 });
 </script>

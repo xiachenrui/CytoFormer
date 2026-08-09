@@ -1,0 +1,10 @@
+# CytoFormer inference
+torch>=2.1
+timm>=1.0.9          # provides vit_giant_patch14_224 used by the encoder
+numpy>=1.24
+pandas>=2.0
+pyarrow>=12.0        # parquet output
+pillow>=9.5
+opencv-python>=4.8   # patch resizing in crop_cells.py
+tifffile>=2023.7.10  # whole-slide reading in crop_cells.py
+zarr>=2.14,<3        # lazy windowed reads from the WSI pyramid

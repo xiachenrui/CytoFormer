@@ -55,9 +55,15 @@ The full mapping is in `cytoformer/organ_celltype_map.json`.
 
 ---
 
-## Sample predictions
+## Sample data and predictions
 
-Two held-out slides can be browsed online, with the predicted cell types overlaid on the H&E:
+Two held-out slides can be browsed online, with the predicted cell types overlaid on the H&E.
+**Click either image to open the viewer:**
+
+| | |
+|:---:|:---:|
+| [<img src="assets/sample_breast.jpg" width="420">](https://zhihuanglab.github.io/CytoFormer/) | [<img src="assets/sample_lung.jpg" width="420">](https://zhihuanglab.github.io/CytoFormer/) |
+| **Breast**, 124,682 cells | **Lung**, 75,100 cells |
 
 **https://zhihuanglab.github.io/CytoFormer/**
 

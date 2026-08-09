@@ -55,6 +55,18 @@ The full mapping is in `cytoformer/organ_celltype_map.json`.
 
 ---
 
+## Sample predictions
+
+Two held-out slides can be browsed online, with the predicted cell types overlaid on the H&E:
+
+**https://zhihuanglab.github.io/CytoFormer/**
+
+Pan and zoom as in a slide viewer, drag the opacity slider to reveal the raw H&E underneath, and
+switch between the model prediction and the reference labels derived from the paired spatial
+transcriptome.
+
+---
+
 ## Install
 
 ```bash
@@ -147,6 +159,7 @@ scripts/
   crop_cells.py      WSI + centroids -> 224x224 cell patches
   infer.py           patches -> predicted cell types
 assets/              figures used in this README
+docs/                the online sample viewer (GitHub Pages)
 ```
 
 ## Contact

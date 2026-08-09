@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CytoFormer — sample predictions</title>
+<script src="https://cdn.jsdelivr.net/npm/openseadragon@4.1.0/build/openseadragon/openseadragon.min.js"></script>
+<style>
+  :root{
+    --bg:#ffffff; --fg:#16181d; --muted:#5b6270; --line:#e3e6ec; --panel:#f7f8fa; --accent:#4754f4;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#14161a; --fg:#e8eaee; --muted:#9aa2b1; --line:#2a2e37; --panel:#1c1f26; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+  header{padding:14px 18px;border-bottom:1px solid var(--line)}
+  h1{margin:0;font-size:16px;font-weight:600;letter-spacing:.01em}
+  h1 span{color:var(--muted);font-weight:400}
+  .wrap{display:flex;height:calc(100vh - 56px)}
+  .side{width:260px;flex:none;border-right:1px solid var(--line);background:var(--panel);
+        padding:16px;overflow-y:auto}
+  .side h2{margin:0 0 8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .side section{margin-bottom:22px}
+  select,button{font:inherit;color:var(--fg);background:var(--bg);
+                border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+  select{width:100%}
+  .seg{display:flex;gap:6px}
+  .seg button{flex:1;cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  .val{float:right;color:var(--muted);font-variant-numeric:tabular-nums}
+  #osd{flex:1;min-width:0;background:#000}
+  ul.legend{list-style:none;margin:0;padding:0;columns:1}
+  ul.legend li{display:flex;align-items:center;gap:8px;padding:2px 0;color:var(--muted)}
+  ul.legend i{width:11px;height:11px;border-radius:2px;flex:none}
+  p.hint{color:var(--muted);margin:8px 0 0;font-size:12px}
+</style>
+</head>
+<body>
+<header><h1>CytoFormer <span>— cell-type predictions on whole slides</span></h1></header>
+
+<div class="wrap">
+  <div class="side">
+    <section>
+      <h2>Sample</h2>
+      <select id="sample"></select>
+      <p class="hint" id="meta"></p>
+    </section>
+
+    <section>
+      <h2>Overlay</h2>
+      <div class="seg">
+        <button id="btn-pred" aria-pressed="true">Prediction</button>
+        <button id="btn-gt" aria-pressed="false">Reference</button>
+      </div>
+      <p class="hint">Reference = cell types derived from the paired spatial transcriptome.</p>
+    </section>
+
+    <section>
+      <h2>Opacity <span class="val" id="opv">100%</span></h2>
+      <input type="range" id="op" min="0" max="100" value="100">
+      <p class="hint">Drag to 0 to see the raw H&amp;E underneath.</p>
+    </section>
+
+    <section>
+      <h2>Cell types</h2>
+      <ul class="legend" id="legend"></ul>
+    </section>
+  </div>
+  <div id="osd"></div>
+</div>
+
+<script>
+const COLORS = {
+  "tumor":[220,30,30], "melanocytic":[150,0,40], "Epithelium":[255,160,0],
+  "Squamous_epithelium":[255,200,60], "Stroma":[60,170,90], "Endothelium":[0,160,200],
+  "Lymphocyte":[40,60,220], "Plasma_cell":[150,90,230], "Macrophage":[0,200,180],
+  "Neutrophil":[140,220,40], "Chondrocyte":[120,90,60], "Acinar":[230,120,180],
+  "Ductal":[200,100,100], "Islet":[250,220,0], "Hepatocyte":[180,130,70],
+  "Cholangiocyte":[120,200,200], "Renal_tubule":[200,150,220], "Microglia":[100,100,100],
+  "Cardiomyocyte":[170,40,60], "Erythroid":[230,60,90], "Myeloid_progenitor":[90,140,60],
+  "Bone_cell":[150,150,200], "Nerve":[230,160,210]
+};
+
+let SAMPLES = [], viewer = null, overlayLayer = null, current = null, kind = "pred";
+
+function legendFor(classes){
+  const ul = document.getElementById("legend");
+  ul.innerHTML = "";
+  classes.forEach(c => {
+    const rgb = COLORS[c] || [150,150,150];
+    const li = document.createElement("li");
+    li.innerHTML = `<i style="background:rgb(${rgb.join(",")})"></i>${c.replace(/_/g," ")}`;
+    ul.appendChild(li);
+  });
+}
+
+function open(sample){
+  current = sample;
+  document.getElementById("meta").textContent = `${sample.organ} · ${sample.cells} cells`;
+  legendFor(sample.classes);
+  if (viewer) viewer.destroy();
+  viewer = OpenSeadragon({
+    id: "osd", prefixUrl: "https://cdn.jsdelivr.net/npm/openseadragon@4.1.0/build/openseadragon/images/",
+    tileSources: `slides/${sample.id}_he.dzi`, showNavigator: true, navigatorPosition: "BOTTOM_RIGHT",
+    maxZoomPixelRatio: 3, visibilityRatio: 1, constrainDuringPan: true
+  });
+  viewer.addOnceHandler("open", addOverlay);
+}
+
+function addOverlay(){
+  const opacity = document.getElementById("op").value / 100;
+  viewer.addTiledImage({
+    tileSource: `slides/${current.id}_${kind}.dzi`, opacity,
+    success: e => { overlayLayer = e.item; }
+  });
+}
+
+function swapOverlay(k){
+  kind = k;
+  document.getElementById("btn-pred").setAttribute("aria-pressed", k === "pred");
+  document.getElementById("btn-gt").setAttribute("aria-pressed", k === "gt");
+  if (overlayLayer){ viewer.world.removeItem(overlayLayer); overlayLayer = null; }
+  addOverlay();
+}
+
+document.getElementById("op").addEventListener("input", e => {
+  document.getElementById("opv").textContent = e.target.value + "%";
+  if (overlayLayer) overlayLayer.setOpacity(e.target.value / 100);
+});
+document.getElementById("btn-pred").addEventListener("click", () => swapOverlay("pred"));
+document.getElementById("btn-gt").addEventListener("click", () => swapOverlay("gt"));
+document.getElementById("sample").addEventListener("change", e => open(SAMPLES[e.target.value]));
+
+fetch("slides/samples.json").then(r => r.json()).then(list => {
+  SAMPLES = list;
+  const sel = document.getElementById("sample");
+  list.forEach((s, i) => sel.add(new Option(s.name, i)));
+  open(list[0]);
+});
+</script>
+</body>
+</html>

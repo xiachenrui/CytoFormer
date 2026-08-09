@@ -1,0 +1,16 @@
+[
+  {
+    "id": "NCBI785",
+    "name": "Breast — held-out slide",
+    "organ": "breast",
+    "cells": "124,682",
+    "classes": ["tumor", "Epithelium", "Stroma", "Endothelium", "Lymphocyte", "Plasma_cell", "Macrophage"]
+  },
+  {
+    "id": "NCBI887",
+    "name": "Lung — held-out slide",
+    "organ": "lung",
+    "cells": "570,477",
+    "classes": ["Epithelium", "Stroma", "Endothelium", "Macrophage", "Chondrocyte"]
+  }
+]

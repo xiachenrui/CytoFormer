@@ -28,8 +28,8 @@ released separately on Hugging Face.
 The organ is a routing signal, not an image feature: the same representation is produced whatever
 organ is declared, so the encoder can be reused as a general cell-level feature extractor.
 
-`model.py` defines `CellClassifier`; `common.py` holds the encoder builder, the taxonomy and
-`PerOrganHead`.
+`cytoformer/model.py` defines `CellClassifier`; `cytoformer/common.py` holds the encoder builder,
+the taxonomy and `PerOrganHead`.
 
 ### Organs and cell types
 
@@ -52,7 +52,7 @@ organ is declared, so the encoder can be reused as a general cell-level feature 
 | skin | Endothelium, Epithelium, Lymphocyte, Macrophage, Plasma_cell, Stroma, melanocytic, tumor |
 | tonsil | Endothelium, Epithelium, Lymphocyte, Macrophage, Plasma_cell, Stroma |
 
-The full mapping is in `organ_celltype_map.json`.
+The full mapping is in `cytoformer/organ_celltype_map.json`.
 
 ---
 
@@ -67,7 +67,7 @@ pip install -r requirements.txt
 Download the checkpoint and put it next to `organ_celltype_map.json`:
 
 ```bash
-mkdir -p checkpoints && cp organ_celltype_map.json checkpoints/
+mkdir -p checkpoints && cp cytoformer/organ_celltype_map.json checkpoints/
 # best.pth (2.6 GB) from https://huggingface.co/zhihuanglab/CytoFormer
 huggingface-cli download zhihuanglab/CytoFormer best.pth --local-dir checkpoints
 ```
@@ -81,33 +81,21 @@ inference.
 
 ### 1. Crop one patch per cell
 
-`crop_cells.py` takes a whole-slide image and a table of nucleus centroids **in that slide's pixel
-frame** and writes one 224×224 PNG per cell.
-
-`cells.csv` needs the columns `x`, `y` (and optionally `cell_id`):
-
-```csv
-cell_id,x,y
-c0,18422,9137
-c1,18510,9203
-```
+Write one 224×224 PNG per cell from a whole-slide image and a table of nucleus centroids in that
+slide's pixel frame (`cells.csv` needs the columns `x`, `y`, optionally `cell_id`):
 
 ```bash
-python crop_cells.py \
-    --wsi   slide.ome.tif \
-    --cells cells.csv \
-    --mpp   0.25 \
-    --out   patches/
+python scripts/crop_cells.py --wsi slide.ome.tif --cells cells.csv --mpp 0.25 --out patches/
 ```
 
-`--mpp` is the micrometres per pixel of the slide at level 0; it sets how many pixels the 56 µm
-window spans before the patch is resized to 224 px. Use `--fov_um` to change the field of view
-(56 µm is what the model was trained with and what works best; see the ablation in the paper).
+`--mpp` is the slide's micrometres per pixel at level 0, which sets how many pixels the 56 µm
+window spans before the patch is resized to 224 px. `--fov_um` changes the field of view (56 µm is
+what the model was trained with).
 
 ### 2. Predict
 
 ```bash
-python infer.py \
+python scripts/infer.py \
     --model_dir checkpoints \
     --patches   patches/ \
     --organ     skin \
@@ -130,11 +118,8 @@ Output (`preds.parquet`):
 ### From Python
 
 ```python
-import torch, sys
-sys.path.insert(0, ".")
-import os; os.environ["CYTOFORMER_ORGAN_MAP"] = "checkpoints/organ_celltype_map.json"
-from model import CellClassifier
-import common
+import torch
+from cytoformer import CellClassifier, ORGAN_IDX
 
 net = CellClassifier()
 sd = torch.load("checkpoints/best.pth", map_location="cpu")["model_state_dict"]
@@ -142,7 +127,7 @@ sd = {k.replace("_orig_mod.", ""): v for k, v in sd.items()}   # tolerate a torc
 net.load_state_dict(sd); net.eval()
 
 x = torch.randn(2, 3, 224, 224)                                # ImageNet-normalised patches
-organ = torch.tensor([common.ORGAN_IDX["skin"]] * 2)
+organ = torch.tensor([ORGAN_IDX["skin"]] * 2)
 logits = net(x, organ)                                         # (2, 23), out-of-organ classes masked
 emb = net.extract_features(x)                                  # (2, 1536) cell embedding
 ```
@@ -152,15 +137,17 @@ active-learning experiments in the paper.
 
 ---
 
-## Files
+## Layout
 
-| file | what it is |
-|---|---|
-| `model.py` | `CellClassifier` — encoder + per-organ head |
-| `common.py` | encoder builder, taxonomy, `PerOrganHead` |
-| `crop_cells.py` | WSI + centroids → 224×224 cell patches |
-| `infer.py` | patches → predicted cell types |
-| `organ_celltype_map.json` | the 16 organs, 23 global classes and each organ's class list |
+```
+cytoformer/          the package
+  model.py           CellClassifier: encoder + per-organ head
+  common.py          encoder builder, taxonomy, PerOrganHead
+  organ_celltype_map.json
+scripts/
+  crop_cells.py      WSI + centroids -> 224x224 cell patches
+  infer.py           patches -> predicted cell types
+```
 
 ## Citation
 

@@ -1,10 +1,9 @@
 """CytoFormer: a UNI2-h ViT-giant image encoder + a multi-task, per-organ classification head.
 The organ id is used only to route each cell to its organ's classification head — the image
 features themselves are not conditioned on the organ."""
-import os, sys
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import torch.nn as nn
-from common import ORGANS, build_backbone, PerOrganHead, summarize, smoke
+
+from .common import ORGANS, build_backbone, PerOrganHead, summarize, smoke
 
 
 class CellClassifier(nn.Module):

@@ -11,8 +11,8 @@ Input CSV must have columns: x, y   (nucleus centroid, in pixels of the WSI at l
 Optional column:            cell_id (defaults to the row index)
 
 Usage:
-  python crop_cells.py --wsi slide.ome.tif --cells cells.csv --mpp 0.25 --out patches/
-  python crop_cells.py --wsi slide.ome.tif --cells cells.csv --mpp 0.25 --out patches/ --fov_um 56
+  python scripts/crop_cells.py --wsi slide.ome.tif --cells cells.csv --mpp 0.25 --out patches/
+  python scripts/crop_cells.py --wsi slide.ome.tif --cells cells.csv --mpp 0.25 --out patches/ --fov_um 56
 """
 import os, argparse
 import numpy as np, pandas as pd

@@ -6,15 +6,17 @@ are restricted to that organ's cell types. Each patch should be ~the cell's 56 u
 (any pixel size — it is resized to 224 px).
 
 Usage:
-  python infer.py --model_dir checkpoints/ --patches patch_dir/ --organ skin --out preds.parquet
+  python scripts/infer.py --model_dir checkpoints/ --patches patch_dir/ --organ skin --out preds.parquet
   # or a list of image files instead of a folder:
-  python infer.py --model_dir checkpoints/ --patches a.png b.png c.png --organ breast --out preds.parquet
+  python scripts/infer.py --model_dir checkpoints/ --patches a.png b.png c.png --organ breast --out preds.parquet
 
 Output parquet columns: cell_id, file, organ, pred_celltype, prob.
 """
 import os, sys, argparse, glob
 import numpy as np, pandas as pd, torch
 from PIL import Image
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # repo root
 Image.MAX_IMAGE_PIXELS = None
 
 IN_PX = 224
@@ -22,10 +24,11 @@ _EXT = (".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".webp")
 
 
 def load_model(model_dir, device):
-    os.environ["CYTOFORMER_ORGAN_MAP"] = os.path.join(model_dir, "organ_celltype_map.json")
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    import common
-    from model import CellClassifier
+    m = os.path.join(model_dir, "organ_celltype_map.json")          # taxonomy shipped with the checkpoint
+    if os.path.exists(m):
+        os.environ["CYTOFORMER_ORGAN_MAP"] = m
+    from cytoformer import common
+    from cytoformer.model import CellClassifier
     net = CellClassifier()                                        # foundation weights optional (ckpt has all)
     ck = torch.load(os.path.join(model_dir, "best.pth"), map_location="cpu")
     sd = ck.get("model_state_dict", ck)

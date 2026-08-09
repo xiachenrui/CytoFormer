@@ -30,7 +30,27 @@ organ is declared, so the encoder can be reused as a general cell-level feature 
 `cytoformer/model.py` defines `CellClassifier`; `cytoformer/common.py` holds the encoder builder,
 the taxonomy and `PerOrganHead`.
 
-### Organs and cell types
+---
+
+## Sample data and predictions
+
+Two held-out slides can be browsed online, with the predicted cell types overlaid on the H&E.
+**Click either image to open the viewer:**
+
+| | |
+|:---:|:---:|
+| [<img src="assets/sample_breast.jpg" width="420">](https://zhihuanglab.github.io/CytoFormer/) | [<img src="assets/sample_lung.jpg" width="420">](https://zhihuanglab.github.io/CytoFormer/) |
+| **Breast**, 124,682 cells | **Lung**, 75,100 cells |
+
+**https://zhihuanglab.github.io/CytoFormer/**
+
+Pan and zoom as in a slide viewer, drag the opacity slider to reveal the raw H&E underneath, and
+switch between the model prediction and the reference labels derived from the paired spatial
+transcriptome.
+
+---
+
+## Organs and cell types
 
 | organ | cell types |
 |---|---|
@@ -52,24 +72,6 @@ the taxonomy and `PerOrganHead`.
 | tonsil | Endothelium, Epithelium, Lymphocyte, Macrophage, Plasma_cell, Stroma |
 
 The full mapping is in `cytoformer/organ_celltype_map.json`.
-
----
-
-## Sample data and predictions
-
-Two held-out slides can be browsed online, with the predicted cell types overlaid on the H&E.
-**Click either image to open the viewer:**
-
-| | |
-|:---:|:---:|
-| [<img src="assets/sample_breast.jpg" width="420">](https://zhihuanglab.github.io/CytoFormer/) | [<img src="assets/sample_lung.jpg" width="420">](https://zhihuanglab.github.io/CytoFormer/) |
-| **Breast**, 124,682 cells | **Lung**, 75,100 cells |
-
-**https://zhihuanglab.github.io/CytoFormer/**
-
-Pan and zoom as in a slide viewer, drag the opacity slider to reveal the raw H&E underneath, and
-switch between the model prediction and the reference labels derived from the paired spatial
-transcriptome.
 
 ---
 

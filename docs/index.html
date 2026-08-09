@@ -68,7 +68,8 @@
         <button id="btn-ov" aria-pressed="true">Overlay</button>
         <button id="btn-he" aria-pressed="false">H&amp;E only</button>
       </div>
-      <p class="hint" id="ovHint">Predicted cell types drawn on the slide.</p>
+      <p class="hint" id="ovHint">Nuclei segmented with StarDist over the whole section, then typed by
+      CytoFormer.</p>
     </section>
 
     <section>
@@ -81,8 +82,9 @@
       <div class="seg">
         <button id="btn-ref" aria-pressed="false">Show reference</button>
       </div>
-      <p class="hint">Adds a second panel on the right with the cell types derived from the paired
-      spatial transcriptome. The two panels pan and zoom together.</p>
+      <p class="hint" id="refHint">Adds a second panel on the right with the cell types derived from
+      the paired spatial transcriptome. It covers only the cells Xenium captured and kept, so it is
+      sparser than the prediction. The two panels pan and zoom together.</p>
     </section>
 
     <section>
@@ -92,8 +94,8 @@
   </div>
 
   <div class="stage">
-    <div class="pane" id="panePred"><div class="tag" id="tagPred">Prediction</div><div class="osd" id="osdPred"></div></div>
-    <div class="pane" id="paneRef"><div class="tag">Reference (spatial transcriptomics)</div><div class="osd" id="osdRef"></div></div>
+    <div class="pane" id="panePred"><div class="tag" id="tagPred">CytoFormer prediction</div><div class="osd" id="osdPred"></div></div>
+    <div class="pane" id="paneRef"><div class="tag" id="tagRef">Reference (spatial transcriptomics)</div><div class="osd" id="osdRef"></div></div>
   </div>
 </div>
 
@@ -156,6 +158,9 @@ function bindSync(){
 function open(sample){
   current = sample;
   legendFor(sample.classes);
+  document.getElementById("tagPred").textContent = `CytoFormer prediction — ${sample.nuclei} nuclei`;
+  document.getElementById("tagRef").textContent =
+    `Reference (spatial transcriptomics) — ${sample.ref_cells} cells`;
   document.querySelectorAll("#slides button").forEach(b =>
     b.setAttribute("aria-pressed", b.dataset.id === sample.id));
   ["pred","ref"].forEach(k => { if (V[k].viewer){ V[k].viewer.destroy(); V[k] = {viewer:null, layer:null}; } });
@@ -177,7 +182,8 @@ function setOverlay(on){
   document.getElementById("btn-ov").setAttribute("aria-pressed", on);
   document.getElementById("btn-he").setAttribute("aria-pressed", !on);
   document.getElementById("ovHint").textContent = on
-    ? "Predicted cell types drawn on the slide." : "The slide as scanned, with no overlay.";
+    ? "Nuclei segmented with StarDist over the whole section, then typed by CytoFormer."
+    : "The slide as scanned, with no overlay.";
   ["pred","ref"].forEach(k => { if (V[k].layer) V[k].layer.setOpacity(opacity()); });
 }
 
@@ -193,7 +199,7 @@ document.getElementById("btn-ref").addEventListener("click", toggleRef);
 fetch("slides/samples.json").then(r => r.json()).then(list => {
   SAMPLES = list;
   document.getElementById("slides").innerHTML = list.map(s =>
-    `<li><button data-id="${s.id}">${s.name}<small>${s.cells} cells</small></button></li>`).join("");
+    `<li><button data-id="${s.id}">${s.name}<small>${s.nuclei} nuclei</small></button></li>`).join("");
   document.querySelectorAll("#slides button").forEach(b =>
     b.addEventListener("click", () => open(SAMPLES.find(s => s.id === b.dataset.id))));
   open(list[0]);

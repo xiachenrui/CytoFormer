@@ -34,19 +34,21 @@ the taxonomy and `PerOrganHead`.
 
 ## Sample data and predictions
 
-Two held-out slides can be browsed online, with the predicted cell types overlaid on the H&E.
+Two held-out slides can be browsed online. Every nucleus on the section was segmented with
+StarDist and then typed by CytoFormer, so the overlay covers the whole tissue.
 **Click either image to open the viewer:**
 
 | | |
 |:---:|:---:|
 | [<img src="assets/sample_breast.jpg" width="420">](https://zhihuanglab.github.io/CytoFormer/) | [<img src="assets/sample_lung.jpg" width="420">](https://zhihuanglab.github.io/CytoFormer/) |
-| **Breast**, 124,682 cells | **Lung**, 75,100 cells |
+| **Breast**, 187,687 nuclei | **Lung**, 124,778 nuclei |
 
 **https://zhihuanglab.github.io/CytoFormer/**
 
-Pan and zoom as in a slide viewer, drag the opacity slider to reveal the raw H&E underneath, and
-switch between the model prediction and the reference labels derived from the paired spatial
-transcriptome.
+Pan and zoom as in a slide viewer, switch between the overlay and the slide as scanned, and open a
+second panel showing the reference cell types derived from the paired spatial transcriptome. The
+reference covers only the cells Xenium captured and kept, which is why it is sparser than the
+prediction.
 
 ---
 

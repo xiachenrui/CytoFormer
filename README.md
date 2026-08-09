@@ -12,11 +12,10 @@ released separately on Hugging Face.
 
 ## Model
 
-```
-   56 x 56 um H&E crop            ViT-giant encoder                per-organ head
-   centred on a nucleus    ->     (UNI2-h init, 1536-d)     ->     (organ selects one)   ->  cell type
-        224 x 224 px                                                 16 linear heads
-```
+![CytoFormer architecture](assets/architecture.png)
+
+A 56 × 56 µm crop centred on a nucleus is encoded by a ViT-giant transformer; the organ selects one
+of 16 linear heads, which predicts a cell type among the cell types of that organ.
 
 | | |
 |---|---|
@@ -147,6 +146,7 @@ cytoformer/          the package
 scripts/
   crop_cells.py      WSI + centroids -> 224x224 cell patches
   infer.py           patches -> predicted cell types
+assets/              figures used in this README
 ```
 
 ## Citation

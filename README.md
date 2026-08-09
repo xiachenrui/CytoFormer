@@ -92,10 +92,6 @@ mkdir -p checkpoints && cp cytoformer/organ_celltype_map.json checkpoints/
 hf download zhihuanglab/CytoFormer checkpoint.pth --local-dir checkpoints
 ```
 
-`checkpoint.pth` (2.7 GB) is the research release: a plain `state_dict` in fp32, with the
-`torch.compile` prefixes stripped and the training state removed, so it loads with
-`strict=True` and nothing needs unwrapping.
-
 The checkpoint contains the whole network, so the UNI2-h foundation weights are **not** needed for
 inference.
 

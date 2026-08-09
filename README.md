@@ -151,5 +151,4 @@ assets/              figures used in this README
 
 ## Contact
 
-Questions and issues are welcome. Please open a GitHub issue, or contact
-Zhi Huang (<zhi.huang@pennmedicine.upenn.edu>).
+For questions or suggestions, please contact: [zhi.huang@pennmedicine.upenn.edu](mailto:zhi.huang@pennmedicine.upenn.edu)

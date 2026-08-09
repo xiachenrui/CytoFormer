@@ -6,7 +6,7 @@ Xenium / H&E sections across 16 organs, using cell types derived from the spatia
 rather than from manual annotation.
 
 This repository contains the model definition and the inference pipeline. The trained weights are
-released separately on Hugging Face.
+released separately on [Hugging Face](https://huggingface.co/zhihuanglab/CytoFormer).
 
 ---
 

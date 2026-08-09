@@ -149,12 +149,7 @@ scripts/
 assets/              figures used in this README
 ```
 
-## Citation
+## Contact
 
-```bibtex
-@article{cytoformer,
-  title  = {CytoFormer: A Molecularly Supervised Cell Foundation Model for Histopathology Cell Classification},
-  author = {Yao, Jialu and Li, Songhao and Yu, Alina and Huang, Zhi},
-  year   = {2026}
-}
-```
+Questions and issues are welcome. Please open a GitHub issue, or contact
+Zhi Huang (<zhi.huang@pennmedicine.upenn.edu>).

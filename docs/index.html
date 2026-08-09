@@ -79,7 +79,7 @@
     <section>
       <h2>Reference</h2>
       <div class="seg">
-        <button id="btn-ref" aria-pressed="false">Show side by side</button>
+        <button id="btn-ref" aria-pressed="false">Show reference</button>
       </div>
       <p class="hint">Adds a second panel on the right with the cell types derived from the paired
       spatial transcriptome. The two panels pan and zoom together.</p>
@@ -166,7 +166,7 @@ function open(sample){
 function toggleRef(){
   showRef = !showRef;
   document.getElementById("btn-ref").setAttribute("aria-pressed", showRef);
-  document.getElementById("btn-ref").textContent = showRef ? "Hide reference" : "Show side by side";
+  document.getElementById("btn-ref").textContent = showRef ? "Hide reference" : "Show reference";
   document.getElementById("paneRef").style.display = showRef ? "block" : "none";
   if (showRef) makeViewer("ref", "gt");
   else if (V.ref.viewer){ V.ref.viewer.destroy(); V.ref = {viewer:null, layer:null}; }

@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cytoformer"
+version = "0.1.0"
+description = "CytoFormer"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    # 在这里列出必要依赖，如 torch, scanpy 等，可暂留空
+]
+
+[tool.setuptools.packages.find]
+where = ["."]

@@ -14,3 +14,6 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["."]
+
+[tool.setuptools.package-data]
+cytoformer = ["organ_celltype_map.json"]
